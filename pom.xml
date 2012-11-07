@@ -6,11 +6,9 @@
 
     <groupId>com.carmanconsulting.camel</groupId>
     <artifactId>camel-transaction</artifactId>
-    <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
 
-    <name>A Camel Route</name>
-    <url>http://www.myorganization.org</url>
+    <name>Camel Transaction Handling</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
