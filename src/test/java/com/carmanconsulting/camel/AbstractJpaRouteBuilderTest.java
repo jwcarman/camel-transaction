@@ -48,7 +48,7 @@ public abstract class AbstractJpaRouteBuilderTest extends AbstractRouteBuilderTe
 // Getter/Setter Methods
 //----------------------------------------------------------------------------------------------------------------------
 
-    private EntityManagerFactory getEntityManagerFactory()
+    protected EntityManagerFactory getEntityManagerFactory()
     {
         if (entityManagerFactory == null)
         {

@@ -51,9 +51,9 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport
             dataSource.setMinIdle(1);
             dataSource.setInitialSize(1);
             dataSource.setMaxActive(1);
-            dataSource.setTestOnBorrow(true);
-            dataSource.setTestOnReturn(true);
-            dataSource.setValidationQuery("select 1");
+            //dataSource.setTestOnBorrow(true);
+            //dataSource.setTestOnReturn(true);
+            //dataSource.setValidationQuery("select 1");
         }
         return dataSource;
     }

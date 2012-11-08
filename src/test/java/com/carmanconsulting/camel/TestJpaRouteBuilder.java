@@ -1,6 +1,7 @@
 package com.carmanconsulting.camel;
 
 import com.carmanconsulting.camel.entity.MyEntity;
+import com.carmanconsulting.camel.jpa.MyEntityRepository;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -9,7 +10,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 /**
  * @author James Carman
@@ -22,7 +23,7 @@ public class TestJpaRouteBuilder extends AbstractJpaRouteBuilderTest
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception
     {
-        return new JpaRouteBuilder();
+        return new JpaRouteBuilder(new MyEntityRepository(getEntityManagerFactory()));
     }
 
     @Override
@@ -50,15 +51,20 @@ public class TestJpaRouteBuilder extends AbstractJpaRouteBuilderTest
         MockEndpoint endpoint = getMockEndpoint("mock:jms:queue:output");
         endpoint.expectedMessageCount(1);
         input.sendBody(test);
-        endpoint.await(2, TimeUnit.SECONDS);
+        checkMockEndpointAssertions();
         assertEntityTableCount(1);
     }
 
     @Test
     public void testWithNullConstraintViolation() throws Exception
     {
+        getMockEndpoint("mock:jms:queue:output").expectedMessageCount(0);
+
         final MyEntity test = new MyEntity();
         input.sendBody(test);
+        checkMockEndpointAssertions();
+
+
         final Exchange exchange = receiveFromDeadLetterQueue();
         assertNotNull(exchange);
         assertEntityTableCount(0);
