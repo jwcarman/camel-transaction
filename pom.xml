@@ -20,6 +20,9 @@
         <camel.version>2.9.4</camel.version>
         <slf4j.version>1.6.6</slf4j.version>
         <spring.version>3.0.5.RELEASE</spring.version>
+        <openjpa.version>2.2.0</openjpa.version>
+
+        <openjpa.includes>com/carmanconsulting/**/entity/**/*.class</openjpa.includes>
     </properties>
 
     <dependencies>
@@ -31,6 +34,11 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-sql</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jpa</artifactId>
             <version>${camel.version}</version>
         </dependency>
         <dependency>
@@ -54,9 +62,25 @@
             <version>${spring.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-orm</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-instrument</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.openjpa</groupId>
+            <artifactId>openjpa</artifactId>
+            <version>${openjpa.version}</version>
         </dependency>
 
         <!-- testing -->
@@ -100,6 +124,27 @@
 
     <build>
         <defaultGoal>install</defaultGoal>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.openjpa</groupId>
+                <artifactId>openjpa-maven-plugin</artifactId>
+                <version>${openjpa.version}</version>
+                <configuration>
+                    <includes>${openjpa.includes}</includes>
+                    <addDefaultConstructor>true</addDefaultConstructor>
+                    <enforcePropertyRestrictions>true</enforcePropertyRestrictions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>enhancer</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>enhance</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

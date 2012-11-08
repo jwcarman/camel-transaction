@@ -2,7 +2,7 @@ package com.carmanconsulting.camel;
 
 import org.apache.camel.builder.RouteBuilder;
 
-public class MyRouteBuilder extends RouteBuilder
+public class JdbcRouteBuilder extends RouteBuilder
 {
     public void configure()
     {
