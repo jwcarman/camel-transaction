@@ -1,10 +1,12 @@
 package com.carmanconsulting.camel;
 
 import com.carmanconsulting.camel.entity.MyEntity;
+import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -52,6 +54,26 @@ public class TestJpaRouteBuilder extends AbstractJpaRouteBuilderTest
         assertEntityTableCount(1);
     }
 
+    @Test
+    public void testWithNullConstraintViolation() throws Exception
+    {
+        final MyEntity test = new MyEntity();
+        input.sendBody(test);
+        final Exchange exchange = receiveFromDeadLetterQueue();
+        assertNotNull(exchange);
+        assertEntityTableCount(0);
+    }
+
+    @Test
+    public void testWithLengthConstraintViolation() throws Exception
+    {
+        final MyEntity test = new MyEntity();
+        test.setName(StringUtils.repeat("X", 256));
+        input.sendBody(test);
+        final Exchange exchange = receiveFromDeadLetterQueue();
+        assertNotNull(exchange);
+        assertEntityTableCount(0);
+    }
     @Override
     public long getTimeoutValue()
     {

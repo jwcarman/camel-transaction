@@ -84,6 +84,7 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport
     @After
     public void closeDataSource() throws SQLException
     {
+        log.info("Closing DataSource...");
         dataSource.close();
     }
 

@@ -1,5 +1,6 @@
 package com.carmanconsulting.camel.entity;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -20,6 +21,7 @@ public class MyEntity implements Serializable
     @Id
     private String id = UUID.randomUUID().toString();
 
+    @Column(name="name", nullable = false, length = 255)
     private String name;
 
 //----------------------------------------------------------------------------------------------------------------------
