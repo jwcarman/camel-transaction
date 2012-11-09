@@ -7,5 +7,9 @@ import com.carmanconsulting.camel.entity.MyEntity;
  */
 public interface MyEntityRepository
 {
+//----------------------------------------------------------------------------------------------------------------------
+// Other Methods
+//----------------------------------------------------------------------------------------------------------------------
+
     void saveEntity(MyEntity entity);
 }

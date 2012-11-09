@@ -44,8 +44,11 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport implemen
 //----------------------------------------------------------------------------------------------------------------------
 
     protected abstract void configurePersistenceUnit(PersistenceUnitBuilder builder);
+
     protected abstract JmsComponent createJmsComponent();
+
     protected abstract JpaComponent createJpaComponent();
+
     protected abstract PlatformTransactionManager createTransactionManager();
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -62,6 +65,11 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport implemen
 //----------------------------------------------------------------------------------------------------------------------
 // Getter/Setter Methods
 //----------------------------------------------------------------------------------------------------------------------
+
+    public CamelContext getContext()
+    {
+        return context;
+    }
 
     protected synchronized DataSource getDataSource()
     {
@@ -99,7 +107,7 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport implemen
 
     protected final PlatformTransactionManager getTransactionManager()
     {
-        if(transactionManager == null)
+        if (transactionManager == null)
         {
             transactionManager = createTransactionManager();
         }
@@ -136,21 +144,15 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport implemen
         return context;
     }
 
-    protected NotifyBuilder createNotifyBuilder()
-    {
-        return new NotifyBuilder(context);
-    }
-
-    public CamelContext getContext()
-    {
-        return context;
-    }
-
     protected JdbcTemplate createJdbcTemplate()
     {
         return new JdbcTemplate(getDataSource());
     }
 
+    protected NotifyBuilder createNotifyBuilder()
+    {
+        return new NotifyBuilder(context);
+    }
 
     protected void doRegistryBindings(SimpleRegistry registry)
     {
@@ -199,7 +201,7 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport implemen
 
         public PersistenceUnitBuilder withProperty(String key, String value)
         {
-            pui.addProperty(key,value);
+            pui.addProperty(key, value);
             return this;
         }
 

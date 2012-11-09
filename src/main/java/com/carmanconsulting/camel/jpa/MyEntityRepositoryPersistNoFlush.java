@@ -9,10 +9,18 @@ import javax.persistence.EntityManagerFactory;
  */
 public class MyEntityRepositoryPersistNoFlush extends AbstractMyEntityRepository
 {
+//----------------------------------------------------------------------------------------------------------------------
+// Constructors
+//----------------------------------------------------------------------------------------------------------------------
+
     public MyEntityRepositoryPersistNoFlush(EntityManagerFactory emf)
     {
         super(emf);
     }
+
+//----------------------------------------------------------------------------------------------------------------------
+// MyEntityRepository Implementation
+//----------------------------------------------------------------------------------------------------------------------
 
     @Override
     public void saveEntity(MyEntity entity)

@@ -11,7 +11,7 @@ import java.util.UUID;
  * @author James Carman
  */
 @Entity
-@Table(name="test_entity")
+@Table(name = "test_entity")
 public class MyEntity implements Serializable
 {
 //----------------------------------------------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ public class MyEntity implements Serializable
     @Id
     private String id = UUID.randomUUID().toString();
 
-    @Column(name="name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -1,18 +1,17 @@
 package com.carmanconsulting.camel;
 
 import com.carmanconsulting.camel.entity.MyEntity;
-import com.carmanconsulting.camel.jpa.AbstractMyEntityRepository;
 import com.carmanconsulting.camel.jpa.MyEntityRepository;
-import com.carmanconsulting.camel.jpa.MyEntityRepositoryPersistNoFlush;
 import com.carmanconsulting.camel.jpa.MyEntityRepositoryPersistWithFlush;
 import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.activemq.camel.component.ActiveMQConfiguration;
-import org.apache.camel.*;
+import org.apache.camel.PollingConsumer;
+import org.apache.camel.Produce;
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.component.jpa.JpaComponent;
-import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.SimpleRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
@@ -126,12 +125,20 @@ public abstract class AbstractTestCaseTemplate extends AbstractRouteBuilderTest
         assertEquals(1, entityCount());
     }
 
+    private boolean builderMatches(NotifyBuilder builder)
+    {
+        log.info("Awaiting notification {}...", builder);
+        boolean matches = builder.matches(5, TimeUnit.SECONDS);
+        log.info("Notification received? {}", matches);
+        return matches;
+    }
+
     private int messageCount(String uri) throws Exception
     {
         log.info("Obtaining message count for URI {}...", uri);
         PollingConsumer consumer = getContext().getEndpoint(uri).createPollingConsumer();
         int count = 0;
-        while(consumer.receive(500) != null)
+        while (consumer.receive(500) != null)
         {
             count++;
         }
@@ -155,14 +162,6 @@ public abstract class AbstractTestCaseTemplate extends AbstractRouteBuilderTest
         assertEquals(0, messageCount(OUTPUT_QUEUE_URI));
         assertEquals(1, messageCount(DLC_QUEUE_URI));
         assertEquals(0, entityCount());
-    }
-
-    private boolean builderMatches(NotifyBuilder builder)
-    {
-        log.info("Awaiting notification {}...", builder);
-        boolean matches = builder.matches(5, TimeUnit.SECONDS);
-        log.info("Notification received? {}", matches);
-        return matches;
     }
 
     @Test

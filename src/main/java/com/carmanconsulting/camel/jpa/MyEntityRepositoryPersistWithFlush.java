@@ -23,7 +23,6 @@ public class MyEntityRepositoryPersistWithFlush extends AbstractMyEntityReposito
 // MyEntityRepository Implementation
 //----------------------------------------------------------------------------------------------------------------------
 
-
     @Override
     public void saveEntity(MyEntity entity)
     {

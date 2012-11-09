@@ -8,6 +8,10 @@ import com.carmanconsulting.camel.jpa.MyEntityRepositoryPersistNoFlush;
  */
 public class TestWithNoJpaFlush extends AbstractTestCaseTemplate
 {
+//----------------------------------------------------------------------------------------------------------------------
+// Other Methods
+//----------------------------------------------------------------------------------------------------------------------
+
     @Override
     protected MyEntityRepository createRepository()
     {
