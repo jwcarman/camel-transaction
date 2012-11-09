@@ -1,9 +1,10 @@
 package com.carmanconsulting.camel;
 
-import org.apache.activemq.camel.component.ActiveMQComponent;
-import org.apache.activemq.camel.component.ActiveMQConfiguration;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.builder.NotifyBuilder;
+import org.apache.camel.component.jms.JmsComponent;
+import org.apache.camel.component.jpa.JpaComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.SimpleRegistry;
 import org.apache.camel.test.junit4.CamelTestSupport;
@@ -11,10 +12,12 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.openjpa.persistence.PersistenceProviderImpl;
 import org.junit.After;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.persistenceunit.MutablePersistenceUnitInfo;
+import org.springframework.orm.jpa.persistenceunit.PersistenceUnitPostProcessor;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -25,15 +28,36 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author James Carman
  */
-public abstract class AbstractRouteBuilderTest extends CamelTestSupport
+public abstract class AbstractRouteBuilderTest extends CamelTestSupport implements PersistenceUnitPostProcessor
 {
 //----------------------------------------------------------------------------------------------------------------------
 // Fields
 //----------------------------------------------------------------------------------------------------------------------
 
-    private SimpleRegistry registry;
-    protected PlatformTransactionManager transactionManager;
+    private PlatformTransactionManager transactionManager;
+    private EntityManagerFactory entityManagerFactory;
     private BasicDataSource dataSource;
+    private CamelContext context;
+
+//----------------------------------------------------------------------------------------------------------------------
+// Abstract Methods
+//----------------------------------------------------------------------------------------------------------------------
+
+    protected abstract void configurePersistenceUnit(PersistenceUnitBuilder builder);
+    protected abstract JmsComponent createJmsComponent();
+    protected abstract JpaComponent createJpaComponent();
+    protected abstract PlatformTransactionManager createTransactionManager();
+
+//----------------------------------------------------------------------------------------------------------------------
+// PersistenceUnitPostProcessor Implementation
+//----------------------------------------------------------------------------------------------------------------------
+
+    public void postProcessPersistenceUnitInfo(MutablePersistenceUnitInfo pui)
+    {
+        pui.setExcludeUnlistedClasses(true);
+        pui.setPersistenceUnitName(getPersistenceUnitName());
+        configurePersistenceUnit(new PersistenceUnitBuilder(pui));
+    }
 
 //----------------------------------------------------------------------------------------------------------------------
 // Getter/Setter Methods
@@ -51,18 +75,33 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport
             dataSource.setMinIdle(1);
             dataSource.setInitialSize(1);
             dataSource.setMaxActive(1);
-            //dataSource.setTestOnBorrow(true);
-            //dataSource.setTestOnReturn(true);
-            //dataSource.setValidationQuery("select 1");
         }
         return dataSource;
     }
 
-    protected PlatformTransactionManager getTransactionManager()
+    protected EntityManagerFactory getEntityManagerFactory()
+    {
+        if (entityManagerFactory == null)
+        {
+            LocalContainerEntityManagerFactoryBean bean = new LocalContainerEntityManagerFactoryBean();
+            bean.setPersistenceUnitName(getPersistenceUnitName());
+            bean.setPersistenceUnitPostProcessors(new PersistenceUnitPostProcessor[]{this});
+            bean.setPersistenceProviderClass(PersistenceProviderImpl.class);
+            bean.setDataSource(getDataSource());
+            bean.getJpaPropertyMap().put("openjpa.jdbc.SynchronizeMappings", "buildSchema(ForeignKeys=true)");
+            bean.getJpaPropertyMap().put("openjpa.RuntimeUnenhancedClasses", "supported");
+            bean.getJpaPropertyMap().put("openjpa.Log", "log4j");
+            bean.afterPropertiesSet();
+            entityManagerFactory = bean.getObject();
+        }
+        return entityManagerFactory;
+    }
+
+    protected final PlatformTransactionManager getTransactionManager()
     {
         if(transactionManager == null)
         {
-            transactionManager = new DataSourceTransactionManager(getDataSource());
+            transactionManager = createTransactionManager();
         }
         return transactionManager;
     }
@@ -71,15 +110,11 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport
 // Other Methods
 //----------------------------------------------------------------------------------------------------------------------
 
-
-
     @After
     public void checkMockEndpointAssertions() throws InterruptedException
     {
         assertMockEndpointsSatisfied(getTimeoutValue(), getTimeoutUnit());
     }
-
-
 
     @After
     public void closeDataSource() throws SQLException
@@ -90,48 +125,54 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport
 
     protected CamelContext createCamelContext() throws Exception
     {
-        final CamelContext context = new DefaultCamelContext(registry);
+        SimpleRegistry registry = new SimpleRegistry();
+        registry.put("dataSource", getDataSource());
+        registry.put("transactionManager", getTransactionManager());
+        doRegistryBindings(registry);
 
+        context = new DefaultCamelContext(registry);
         context.addComponent("jms", createJmsComponent());
-
-
+        context.addComponent("jpa", createJpaComponent());
         return context;
     }
 
-    protected ActiveMQComponent createJmsComponent()
+    protected NotifyBuilder createNotifyBuilder()
     {
-        final ActiveMQConfiguration activeMQConfig = new ActiveMQConfiguration();
-        activeMQConfig.setTransacted(true);
-        activeMQConfig.setBrokerURL("vm://" + getClass().getSimpleName() + "?broker.persistent=false&broker.useJmx=false");
-
-        final ActiveMQComponent jms = new ActiveMQComponent(activeMQConfig);
-        jms.setTransacted(true);
-        jms.setTransactionManager(getTransactionManager());
-        return jms;
+        return new NotifyBuilder(context);
     }
 
+    public CamelContext getContext()
+    {
+        return context;
+    }
 
     protected JdbcTemplate createJdbcTemplate()
     {
         return new JdbcTemplate(getDataSource());
     }
 
-    protected void doBindings(SimpleRegistry registry)
+
+    protected void doRegistryBindings(SimpleRegistry registry)
     {
         // Do nothing
     }
 
-    @Override
-    protected final void doPreSetup() throws Exception
+    protected String getPersistenceUnitName()
     {
-        super.doPreSetup();
-        registry = new SimpleRegistry();
-        registry.put("dataSource", getDataSource());
-        registry.put("transactionManager", getTransactionManager());
-        doBindings(registry);
+        return getClass().getSimpleName();
     }
 
-    protected Exchange receiveFromDeadLetterQueue()
+    public TimeUnit getTimeoutUnit()
+    {
+        return TimeUnit.SECONDS;
+    }
+
+    public long getTimeoutValue()
+    {
+        return 3;
+    }
+
+    protected Exchange pollDeadLetterQueue()
     {
         return consumer.receive("jms:queue:ActiveMQ.DLQ", 2000);
     }
@@ -140,14 +181,42 @@ public abstract class AbstractRouteBuilderTest extends CamelTestSupport
 // Inner Classes
 //----------------------------------------------------------------------------------------------------------------------
 
-
-    public long getTimeoutValue()
+    protected class PersistenceUnitBuilder
     {
-        return 3;
-    }
+        private final MutablePersistenceUnitInfo pui;
+        private List<String> defaultClasses;
 
-    public TimeUnit getTimeoutUnit()
-    {
-        return TimeUnit.SECONDS;
+        public PersistenceUnitBuilder(MutablePersistenceUnitInfo pui)
+        {
+            this.pui = pui;
+            pui.setTransactionType(PersistenceUnitTransactionType.RESOURCE_LOCAL);
+            pui.setPersistenceProviderClassName(PersistenceProviderImpl.class.getName());
+            pui.setJtaDataSource(null);
+
+            this.defaultClasses = new ArrayList<String>(pui.getManagedClassNames());
+            pui.getManagedClassNames().clear();
+        }
+
+        public PersistenceUnitBuilder withProperty(String key, String value)
+        {
+            pui.addProperty(key,value);
+            return this;
+        }
+
+        public PersistenceUnitBuilder withDefaultClasses()
+        {
+            for (String defaultClass : defaultClasses)
+            {
+                pui.addManagedClassName(defaultClass);
+            }
+
+            return this;
+        }
+
+        public PersistenceUnitBuilder withClass(Class<?> entityClass)
+        {
+            pui.addManagedClassName(entityClass.getName());
+            return this;
+        }
     }
 }
